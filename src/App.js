@@ -1,12 +1,9 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 
-const bgmList = ['/assets/bgm.mp3'];
-
 function App() {
   const [story, setStory] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
-  const [bgmSrc, setBgmSrc] = useState(bgmList[0]);
   const [bgmVolume, setBgmVolume] = useState(0.15);
   const [isMuted, setIsMuted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,9 +20,6 @@ function App() {
     setStory('');
     setAudioUrl('');
 
-    const random = bgmList[Math.floor(Math.random() * bgmList.length)];
-    setBgmSrc(random);
-
     try {
       const res = await axios.get('http://localhost:5000/api/story');
       setStory(res.data.content);
@@ -38,14 +32,18 @@ function App() {
           audioRef.current.play();
         }
         if (bgmRef.current && bgmRef.current.paused) {
-          bgmRef.current.src = random;
           bgmRef.current.volume = bgmVolume;
-          bgmRef.current.currentTime = 0;
-          bgmRef.current.play();
+          bgmRef.current.play().catch(err => {
+            console.warn('Không thể phát nhạc nền:', err.message);
+          });
         }
       }, 300);
     } catch (err) {
-      setStory('❌ Không thể lấy truyện mới.');
+      if (err.response?.status === 409) {
+        setStory('⚠️ Truyện bị trùng với lịch sử. Vui lòng thử lại.');
+      } else {
+        setStory('❌ Không thể lấy truyện mới.');
+      }
     }
 
     setLoading(false);
@@ -74,21 +72,18 @@ function App() {
       setNextAudioUrl(null);
       isPreloadingRef.current = false;
 
-      const nextBgm = bgmList[Math.floor(Math.random() * bgmList.length)];
-      setBgmSrc(nextBgm);
-
       setTimeout(() => {
         if (audioRef.current) {
           audioRef.current.load();
           audioRef.current.play();
         }
         if (bgmRef.current && bgmRef.current.paused) {
-          bgmRef.current.src = nextBgm;
           bgmRef.current.volume = bgmVolume;
-          bgmRef.current.currentTime = 0;
-          bgmRef.current.play();
+          bgmRef.current.play().catch(err => {
+            console.warn('Không thể phát nhạc nền:', err.message);
+          });
         }
-      }, 2000); // Delay 2 giây
+      }, 2000);
     } else {
       getAndPlayStory();
     }
@@ -134,13 +129,14 @@ function App() {
         ref={bgmRef}
         loop
         muted={isMuted}
+        autoPlay
+        preload="auto"
+        src="/assets/bgm.mp3"
         style={{ display: 'none' }}
-      >
-        <source src={bgmSrc} type="audio/mpeg" />
-      </audio>
+      />
 
       {/* Nút điều khiển */}
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 15 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 15, flexWrap: 'wrap' }}>
         <button
           onClick={() => {
             setIsLooping(!isLooping);
@@ -216,7 +212,6 @@ function App() {
         </div>
       )}
 
-      {/* CSS nội bộ */}
       <style>{`
         button:hover {
           opacity: 0.9;
@@ -228,12 +223,8 @@ function App() {
           accent-color: #1890ff;
         }
 
-        h1 {
+        h1, h2 {
           color: #2c3e50;
-        }
-
-        h2 {
-          color: #34495e;
         }
 
         audio::-webkit-media-controls-panel {
@@ -245,3 +236,4 @@ function App() {
 }
 
 export default App;
+  
