@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
-
+import Swal from 'sweetalert2';
 function App() {
   const [story, setStory] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
@@ -138,42 +138,75 @@ function App() {
       {/* Nút điều khiển */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: 15, flexWrap: 'wrap' }}>
         <button
-          onClick={() => {
-            setIsLooping(!isLooping);
-            if (!isLooping) getAndPlayStory();
-            else {
-              setNextStory(null);
-              setNextAudioUrl(null);
-              isPreloadingRef.current = false;
-            }
-          }}
-          style={{
-            padding: '10px 20px',
-            fontSize: 16,
-            backgroundColor: isLooping ? '#ff4d4f' : '#1890ff',
-            color: 'white',
-            border: 'none',
-            borderRadius: 8,
-            cursor: 'pointer'
-          }}
-        >
-          {isLooping ? '⛔ Dừng kể chuyện' : '▶️ Bắt đầu kể chuyện'}
-        </button>
+  onClick={async () => {
+    if (isLooping) {
+      const result = await Swal.fire({
+        title: 'Dừng kể chuyện?',
+        text: 'Bạn có chắc chắn muốn dừng không ạ?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Có, dừng lại',
+        cancelButtonText: 'Không'
+      });
 
-        <button
-          onClick={() => setIsMuted(!isMuted)}
-          style={{
-            padding: '10px 20px',
-            fontSize: 16,
-            backgroundColor: '#52c41a',
-            color: 'white',
-            border: 'none',
-            borderRadius: 8,
-            cursor: 'pointer'
-          }}
-        >
-          {isMuted ? '🔈 Bật nhạc nền' : '🔇 Tắt nhạc nền'}
-        </button>
+      if (result.isConfirmed) {
+        setNextStory(null);
+        setNextAudioUrl(null);
+        isPreloadingRef.current = false;
+        setIsLooping(false);
+        Swal.fire({
+          icon: 'success',
+          title: 'Đã dừng kể chuyện.',
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    } else {
+      setIsLooping(true);
+      getAndPlayStory();
+    }
+  }}
+  style={{
+    padding: '12px 24px',
+    fontSize: 18,
+    fontWeight: 'bold',
+    background: isLooping
+      ? 'linear-gradient(to right, #ff4d4f, #ff7875)'
+      : 'linear-gradient(to right, #1890ff, #40a9ff)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '999px',
+    cursor: 'pointer',
+    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.15)',
+    transition: 'all 0.3s ease'
+  }}
+>
+  {isLooping ? '⛔ Dừng kể chuyện' : '▶️ Bắt đầu kể chuyện'}
+</button>
+
+
+      <button
+  onClick={() => setIsMuted(!isMuted)}
+  style={{
+    padding: '12px 24px',
+    fontSize: 16,
+    fontWeight: 'bold',
+    background: isMuted
+      ? 'linear-gradient(to right, #52c41a, #73d13d)' // Xanh bật
+      : 'linear-gradient(to right, #8c8c8c, #bfbfbf)', // Xám tắt
+    color: '#fff',
+    border: 'none',
+    borderRadius: '999px',
+    cursor: 'pointer',
+    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.15)',
+    transition: 'all 0.3s ease'
+  }}
+>
+  {isMuted ? '🔈 Bật nhạc nền' : '🔇 Tắt nhạc nền'}
+</button>
+
       </div>
 
       {/* Âm lượng nhạc nền */}
